@@ -1,60 +1,93 @@
 import streamlit as st
 import pandas as pd
 import requests
-from datetime import datetime
+import base64
+import os
 
 # ---------------------------------------------------------------
-# PAGE CONFIG + THEME
+# PAGE CONFIG + THEME (white / blue)
 # ---------------------------------------------------------------
 st.set_page_config(page_title="Wampeewo Ntakke — Parent Portal", page_icon="🎓", layout="wide")
 
-PRIMARY = "#14342B"   # deep forest green
-GOLD = "#D7A33D"      # gayaza gold
-TERRACOTTA = "#B8512F"
-CREAM = "#F7F2E7"
+PRIMARY = "#0B4F9E"     # school blue
+PRIMARY_DARK = "#063366"
+LIGHT_BLUE = "#EAF2FB"
+GOLD = "#D7A33D"        # kept only for "fees" badge accent
+TERRACOTTA = "#B8512F"  # kept only for "emergency" badge accent
+WHITE = "#FFFFFF"
+
+LOGO_PATH = "logo.png"  # drop your real school badge into the repo with this exact filename
+
+
+def get_base64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return None
+
+
+logo_b64 = get_base64(LOGO_PATH)
+
+# Background watermark CSS — uses the real badge if logo.png exists, else plain white
+if logo_b64:
+    bg_css = f"""
+    .stApp {{
+        background-image:
+            linear-gradient(rgba(255,255,255,0.94), rgba(255,255,255,0.94)),
+            url("data:image/png;base64,{logo_b64}");
+        background-repeat: no-repeat;
+        background-position: center 120px;
+        background-size: 480px 480px;
+        background-attachment: fixed;
+    }}
+    """
+else:
+    bg_css = f".stApp {{ background-color: {WHITE}; }}"
 
 st.markdown(f"""
 <style>
-.stApp {{ background-color: {CREAM}; }}
+{bg_css}
 .header-bar {{
     background-color: {PRIMARY}; color: white; padding: 18px 24px;
     border-radius: 12px; margin-bottom: 14px; display:flex; align-items:center; gap:14px;
 }}
 .header-bar h1 {{ font-size: 20px; margin: 0; }}
-.header-bar p {{ margin: 0; color: #9fcdb4; font-size: 12px; }}
+.header-bar p {{ margin: 0; color: {LIGHT_BLUE}; font-size: 12px; }}
 .badge {{
     display:inline-block; padding: 2px 10px; border-radius: 999px;
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
 }}
 .badge-emergency {{ background:{TERRACOTTA}; color:white; }}
 .badge-meeting {{ background:{PRIMARY}; color:white; }}
-.badge-exam {{ background:#555; color:white; }}
+.badge-exam {{ background:{PRIMARY_DARK}; color:white; }}
 .badge-fees {{ background:{GOLD}; color:#3a2a05; }}
-.badge-event {{ background:#3f7a5d; color:white; }}
+.badge-event {{ background:#2E86C1; color:white; }}
 .card {{
-    background:white; border:1px solid #e3ddca; border-radius:12px;
+    background:rgba(255,255,255,0.92); border:1px solid #cfe0f3; border-radius:12px;
     padding:16px; margin-bottom:10px;
 }}
 .metric-card {{
-    background:white; border:1px solid #e3ddca; border-radius:12px; padding:14px;
+    background:rgba(255,255,255,0.92); border:1px solid #cfe0f3; border-radius:12px; padding:14px;
     text-align:center;
 }}
 .metric-card .value {{ font-size: 26px; font-weight: 800; color:{PRIMARY}; }}
 .metric-card .label {{ font-size: 11px; text-transform:uppercase; letter-spacing:.05em; color:#777; }}
 .seal {{
-    border: 3px dashed {TERRACOTTA}; border-radius: 50%; width: 70px; height: 70px;
-    display:flex; align-items:center; justify-content:center; font-size: 10px;
-    text-align:center; color:{TERRACOTTA}; font-weight:700; line-height:1.1; padding:4px;
+    border: 3px solid white; border-radius: 50%; width: 56px; height: 56px;
+    display:flex; align-items:center; justify-content:center; font-size: 9px;
+    text-align:center; color:white; font-weight:700; line-height:1.1; padding:4px;
+    background: {PRIMARY_DARK};
 }}
+[data-testid="stChatMessage"] {{ background: rgba(255,255,255,0.92); border-radius: 10px; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------
-# SCHOOL FACTS (real, public) — swap in your own about-page copy
+# SCHOOL FACTS (real, public)
 # ---------------------------------------------------------------
 SCHOOL = {
     "name": "Wampeewo Ntakke Secondary School",
-    "motto": "Ekkula ye bukka",
+    "motto": "Ekula Y'ebuuka",
     "founded": 1966,
     "location": "Gayaza Road, Wakiso, Uganda",
 }
@@ -111,7 +144,7 @@ NOTICES = [
 ]
 
 # ---------------------------------------------------------------
-# CLAUDE API HELPER (uses the same secrets pattern as your other app)
+# CLAUDE API HELPER (same secrets pattern as your other app)
 # ---------------------------------------------------------------
 def ask_claude(system_prompt: str, user_text: str) -> str:
     api_key = st.secrets.get("ANTHROPIC_API_KEY")
@@ -155,9 +188,15 @@ if "chat" not in st.session_state:
 # ---------------------------------------------------------------
 # HEADER
 # ---------------------------------------------------------------
+if logo_b64:
+    logo_html = (f'<img src="data:image/png;base64,{logo_b64}" '
+                 f'style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid white;" />')
+else:
+    logo_html = f"<div class='seal'>WNSS<br>EST {SCHOOL['founded']}</div>"
+
 st.markdown(f"""
 <div class="header-bar">
-    <div class="seal">WNSS<br>EST {SCHOOL['founded']}</div>
+    {logo_html}
     <div>
         <h1>{SCHOOL['name']}</h1>
         <p>Parent Portal · {SCHOOL['location']} · Motto: "{SCHOOL['motto']}"</p>
@@ -165,8 +204,12 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+if not logo_b64:
+    st.caption("💡 Drop your real school badge into the repo as `logo.png` and it'll appear here "
+               "and as a faint watermark on the page automatically — no code changes needed.")
+
 # ---------------------------------------------------------------
-# STUDENT SEARCH (this is the bit you asked for)
+# STUDENT SEARCH
 # ---------------------------------------------------------------
 if st.session_state.student is None:
     st.subheader("🔍 Find your child")
