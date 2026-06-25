@@ -5,18 +5,24 @@ import base64
 import os
 
 # ---------------------------------------------------------------
-# PAGE CONFIG + THEME (white / blue)
+# PAGE CONFIG
 # ---------------------------------------------------------------
-st.set_page_config(page_title="Wampeewo Ntakke — Parent Portal", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Wampeewo Ntakke — Parent Portal", page_icon="🛡️", layout="wide")
 
-PRIMARY = "#0B4F9E"     # school blue
-PRIMARY_DARK = "#063366"
-LIGHT_BLUE = "#EAF2FB"
-GOLD = "#D7A33D"        # kept only for "fees" badge accent
-TERRACOTTA = "#B8512F"  # kept only for "emergency" badge accent
+# ---------------------------------------------------------------
+# COLOR SYSTEM — pulled straight from the school badge
+# ---------------------------------------------------------------
+NAVY = "#06264D"        # shield blue, deep
+BLUE = "#0B4F9E"        # shield blue, bright
+SKY = "#EAF3FC"         # background tint
+CRIMSON = "#C8102E"     # the red on the badge border / banner
+CRIMSON_DARK = "#8C0B20"
+GOLD = "#D7A33D"        # used only for the fees accent
+INK = "#0F1E33"
+SLATE = "#5B6B82"
 WHITE = "#FFFFFF"
 
-LOGO_PATH = "logo.png"  # drop your real school badge into the repo with this exact filename
+LOGO_PATH = "logo.png"
 
 
 def get_base64(path):
@@ -28,62 +34,178 @@ def get_base64(path):
 
 logo_b64 = get_base64(LOGO_PATH)
 
-# Background watermark CSS — uses the real badge if logo.png exists, else plain white
-if logo_b64:
-    bg_css = f"""
-    .stApp {{
-        background-image:
-            linear-gradient(rgba(255,255,255,0.94), rgba(255,255,255,0.94)),
-            url("data:image/png;base64,{logo_b64}");
-        background-repeat: no-repeat;
-        background-position: center 120px;
-        background-size: 480px 480px;
-        background-attachment: fixed;
-    }}
-    """
-else:
-    bg_css = f".stApp {{ background-color: {WHITE}; }}"
-
+# ---------------------------------------------------------------
+# GLOBAL STYLE
+# ---------------------------------------------------------------
 st.markdown(f"""
 <style>
-{bg_css}
-.header-bar {{
-    background-color: {PRIMARY}; color: white; padding: 18px 24px;
-    border-radius: 12px; margin-bottom: 14px; display:flex; align-items:center; gap:14px;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; }}
+h1, h2, h3, h4 {{ font-family: 'Poppins', sans-serif; }}
+
+.stApp {{ background-color: {SKY}; }}
+#MainMenu {{visibility: hidden;}}
+footer {{visibility: hidden;}}
+
+/* ---------- Hero ---------- */
+.hero {{
+    background: linear-gradient(135deg, {NAVY} 0%, {BLUE} 100%);
+    border-radius: 18px;
+    padding: 28px 32px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(6,38,77,0.25);
 }}
-.header-bar h1 {{ font-size: 20px; margin: 0; }}
-.header-bar p {{ margin: 0; color: {LIGHT_BLUE}; font-size: 12px; }}
-.badge {{
-    display:inline-block; padding: 2px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+.hero::after {{
+    content: "";
+    position: absolute; right: -40px; top: -40px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
 }}
-.badge-emergency {{ background:{TERRACOTTA}; color:white; }}
-.badge-meeting {{ background:{PRIMARY}; color:white; }}
-.badge-exam {{ background:{PRIMARY_DARK}; color:white; }}
-.badge-fees {{ background:{GOLD}; color:#3a2a05; }}
-.badge-event {{ background:#2E86C1; color:white; }}
+.hero img {{
+    width: 78px; height: 78px; border-radius: 50%;
+    background: white; padding: 4px; object-fit: contain;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    position: relative; z-index: 1;
+}}
+.hero-text {{ position: relative; z-index: 1; }}
+.hero-text h1 {{
+    color: white; font-size: 23px; font-weight: 800; margin: 0; letter-spacing: -0.01em;
+}}
+.hero-text .motto {{
+    color: {GOLD}; font-style: italic; font-weight: 600; font-size: 13px; margin: 2px 0 0 0;
+}}
+.hero-text .sub {{
+    color: rgba(255,255,255,0.75); font-size: 12.5px; margin: 4px 0 0 0;
+}}
+.accent-bar {{
+    height: 4px; border-radius: 4px; margin-bottom: 22px;
+    background: linear-gradient(90deg, {CRIMSON} 0%, {GOLD} 50%, {CRIMSON} 100%);
+}}
+
+/* ---------- Section labels ---------- */
+.section-label {{
+    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 12px;
+    text-transform: uppercase; letter-spacing: .08em; color: {SLATE};
+    margin: 4px 0 10px 0; display: flex; align-items: center; gap: 6px;
+}}
+
+/* ---------- Cards ---------- */
 .card {{
-    background:rgba(255,255,255,0.92); border:1px solid #cfe0f3; border-radius:12px;
-    padding:16px; margin-bottom:10px;
+    background: white; border-radius: 16px; padding: 18px 20px;
+    box-shadow: 0 2px 10px rgba(15,30,51,0.06); border: 1px solid #E7EEF6;
+    margin-bottom: 12px;
 }}
-.metric-card {{
-    background:rgba(255,255,255,0.92); border:1px solid #cfe0f3; border-radius:12px; padding:14px;
-    text-align:center;
+.stat-card {{
+    background: white; border-radius: 16px; padding: 18px;
+    box-shadow: 0 2px 10px rgba(15,30,51,0.06); border: 1px solid #E7EEF6;
+    text-align: left;
 }}
-.metric-card .value {{ font-size: 26px; font-weight: 800; color:{PRIMARY}; }}
-.metric-card .label {{ font-size: 11px; text-transform:uppercase; letter-spacing:.05em; color:#777; }}
-.seal {{
-    border: 3px solid white; border-radius: 50%; width: 56px; height: 56px;
-    display:flex; align-items:center; justify-content:center; font-size: 9px;
-    text-align:center; color:white; font-weight:700; line-height:1.1; padding:4px;
-    background: {PRIMARY_DARK};
+.stat-card .icon {{
+    font-size: 20px; width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: {SKY}; margin-bottom: 10px;
 }}
-[data-testid="stChatMessage"] {{ background: rgba(255,255,255,0.92); border-radius: 10px; }}
+.stat-card .value {{ font-family: 'Poppins', sans-serif; font-size: 25px; font-weight: 800; color: {NAVY}; }}
+.stat-card .label {{ font-size: 11.5px; color: {SLATE}; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }}
+
+.notice-card {{
+    background: white; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px;
+    border-left: 5px solid {BLUE}; box-shadow: 0 2px 10px rgba(15,30,51,0.05);
+}}
+.notice-card.emergency {{ border-left-color: {CRIMSON}; background: #FDF2F3; }}
+.notice-card.fees {{ border-left-color: {GOLD}; }}
+.notice-card.exam {{ border-left-color: {NAVY}; }}
+.notice-card.event {{ border-left-color: #2E86C1; }}
+
+.pill {{
+    display: inline-block; padding: 3px 11px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+}}
+.pill-emergency {{ background: {CRIMSON}; color: white; }}
+.pill-meeting {{ background: {BLUE}; color: white; }}
+.pill-exam {{ background: {NAVY}; color: white; }}
+.pill-fees {{ background: {GOLD}; color: #3a2a05; }}
+.pill-event {{ background: #2E86C1; color: white; }}
+
+.notice-title {{ font-weight: 700; color: {INK}; margin: 8px 0 4px 0; font-size: 15px; }}
+.notice-time {{ color: {SLATE}; font-size: 11.5px; }}
+
+/* ---------- Student banner ---------- */
+.student-banner {{
+    background: white; border-radius: 16px; padding: 16px 20px; margin-bottom: 16px;
+    border: 1px solid #E7EEF6; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(15,30,51,0.05);
+}}
+.student-banner .name {{ font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 17px; color: {NAVY}; }}
+.student-banner .meta {{ color: {SLATE}; font-size: 12.5px; }}
+
+/* ---------- Tabs ---------- */
+button[data-baseweb="tab"] {{
+    font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 13.5px;
+    color: {SLATE};
+}}
+button[data-baseweb="tab"][aria-selected="true"] {{ color: {BLUE} !important; }}
+div[data-baseweb="tab-highlight"] {{ background-color: {BLUE} !important; height: 3px; }}
+
+/* ---------- Buttons ---------- */
+.stButton button {{
+    border-radius: 10px; font-weight: 600; font-family: 'Inter', sans-serif;
+}}
+.stButton button[kind="primary"] {{
+    background: {BLUE}; border: none;
+}}
+
+/* ---------- Inputs ---------- */
+.stTextInput input {{ border-radius: 12px; padding: 10px 14px; }}
+
+/* ---------- Chat ---------- */
+[data-testid="stChatMessage"] {{
+    background: white; border-radius: 14px; border: 1px solid #E7EEF6;
+    box-shadow: 0 2px 8px rgba(15,30,51,0.05);
+}}
+
+/* ---------- Splash screen ---------- */
+@keyframes fadeUp {{
+    from {{ opacity: 0; transform: translateY(14px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+}}
+.splash-wrap {{
+    background: radial-gradient(circle at 30% 20%, {BLUE} 0%, {NAVY} 55%, #02152e 100%);
+    border-radius: 22px; padding: 56px 32px 40px 32px; text-align: center;
+    margin-bottom: 14px; animation: fadeUp 0.6s ease-out;
+    box-shadow: 0 16px 40px rgba(6,38,77,0.35);
+}}
+.splash-wrap img {{
+    width: 110px; height: 110px; border-radius: 50%; background: white; padding: 6px;
+    object-fit: contain; box-shadow: 0 8px 22px rgba(0,0,0,0.3); margin-bottom: 18px;
+}}
+.splash-wrap h1 {{
+    color: white; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.01em;
+}}
+.splash-wrap .splash-sub {{
+    color: {GOLD}; font-style: italic; font-weight: 600; font-size: 14px; margin: 6px 0 0 0;
+}}
+.splash-wrap .splash-tag {{
+    color: rgba(255,255,255,0.65); font-size: 12.5px; margin: 22px 0 18px 0;
+    text-transform: uppercase; letter-spacing: .12em; font-weight: 600;
+}}
+.feature-chip {{
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 999px; padding: 7px 14px; margin: 4px; font-size: 12.5px;
+    color: white; font-weight: 500;
+}}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------
-# SCHOOL FACTS (real, public)
+# SCHOOL FACTS
 # ---------------------------------------------------------------
 SCHOOL = {
     "name": "Wampeewo Ntakke Secondary School",
@@ -144,7 +266,7 @@ NOTICES = [
 ]
 
 # ---------------------------------------------------------------
-# CLAUDE API HELPER (same secrets pattern as your other app)
+# CLAUDE API HELPER
 # ---------------------------------------------------------------
 def ask_claude(system_prompt: str, user_text: str) -> str:
     api_key = st.secrets.get("ANTHROPIC_API_KEY")
@@ -184,69 +306,128 @@ if "student" not in st.session_state:
     st.session_state.student = None
 if "chat" not in st.session_state:
     st.session_state.chat = []
+if "entered" not in st.session_state:
+    st.session_state.entered = False
 
 # ---------------------------------------------------------------
-# HEADER
+# SPLASH / LAUNCH SCREEN — first thing a parent sees, every visit
 # ---------------------------------------------------------------
-if logo_b64:
-    logo_html = (f'<img src="data:image/png;base64,{logo_b64}" '
-                 f'style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid white;" />')
-else:
-    logo_html = f"<div class='seal'>WNSS<br>EST {SCHOOL['founded']}</div>"
+if not st.session_state.entered:
+    splash_logo = (
+        f'<img src="data:image/png;base64,{logo_b64}" />'
+        if logo_b64 else
+        '<div style="width:110px;height:110px;border-radius:50%;background:white;display:flex;'
+        'align-items:center;justify-content:center;font-weight:800;color:#06264D;font-size:13px;margin:0 auto 18px auto;">WNSS</div>'
+    )
+    st.markdown(f"""
+    <div class="splash-wrap">
+        {splash_logo}
+        <h1>{SCHOOL['name']}</h1>
+        <p class="splash-sub">"{SCHOOL['motto']}"</p>
+        <p class="splash-tag">Parent Portal</p>
+        <div>
+            <span class="feature-chip">📅 Attendance</span>
+            <span class="feature-chip">💰 Fees</span>
+            <span class="feature-chip">📊 Grades</span>
+            <span class="feature-chip">📢 Notices</span>
+            <span class="feature-chip">🤖 AI Assistant</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns([1.4, 1, 1.4])
+    with c2:
+        if st.button("Enter Parent Portal →", use_container_width=True, type="primary"):
+            st.session_state.entered = True
+            st.rerun()
+    st.stop()
+
+# ---------------------------------------------------------------
+# HERO HEADER (always visible once inside the app)
+# ---------------------------------------------------------------
+logo_img_tag = (
+    f'<img src="data:image/png;base64,{logo_b64}" />'
+    if logo_b64 else
+    '<div style="width:78px;height:78px;border-radius:50%;background:white;display:flex;'
+    'align-items:center;justify-content:center;font-weight:800;color:#06264D;font-size:11px;">WNSS</div>'
+)
 
 st.markdown(f"""
-<div class="header-bar">
-    {logo_html}
-    <div>
+<div class="hero">
+    {logo_img_tag}
+    <div class="hero-text">
         <h1>{SCHOOL['name']}</h1>
-        <p>Parent Portal · {SCHOOL['location']} · Motto: "{SCHOOL['motto']}"</p>
+        <p class="motto">"{SCHOOL['motto']}"</p>
+        <p class="sub">📍 {SCHOOL['location']} &nbsp;·&nbsp; Est. {SCHOOL['founded']} &nbsp;·&nbsp; Parent Portal</p>
     </div>
 </div>
+<div class="accent-bar"></div>
 """, unsafe_allow_html=True)
 
 if not logo_b64:
-    st.caption("💡 Drop your real school badge into the repo as `logo.png` and it'll appear here "
-               "and as a faint watermark on the page automatically — no code changes needed.")
+    st.caption("💡 Drop your real school badge into the repo as `logo.png` to replace the placeholder above.")
 
 # ---------------------------------------------------------------
 # STUDENT SEARCH
 # ---------------------------------------------------------------
 if st.session_state.student is None:
-    st.subheader("🔍 Find your child")
-    query = st.text_input("Type your child's name", placeholder="e.g. Nantongo, Okello, Sarah...")
+    st.markdown('<div class="section-label">🔍 FIND YOUR CHILD</div>', unsafe_allow_html=True)
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        query = st.text_input("Search", placeholder="Type your child's name — e.g. Nantongo, Okello, Sarah...",
+                               label_visibility="collapsed")
 
-    if query:
-        matches = STUDENTS_DF[STUDENTS_DF["name"].str.contains(query, case=False, na=False)]
-        if matches.empty:
-            st.info("No student found with that name in this demo database. "
-                    "Connect your real student register to search live records.")
+        if query:
+            matches = STUDENTS_DF[STUDENTS_DF["name"].str.contains(query, case=False, na=False)]
+            if matches.empty:
+                st.info("No student found with that name in this demo database. "
+                        "Connect your real student register to search live records.")
+            else:
+                for _, row in matches.iterrows():
+                    st.markdown(f"""
+                    <div class="card" style="display:flex;align-items:center;justify-content:space-between;">
+                        <div>
+                            <div style="font-weight:700;color:{NAVY};font-size:15px;">{row['name']}</div>
+                            <div style="color:{SLATE};font-size:12.5px;">{row['klass']} · Adm. {row['admission_no']} · Guardian: {row['guardian']}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if st.button(f"View {row['name'].split()[0]}'s record →", key=row["admission_no"]):
+                        st.session_state.student = row.to_dict()
+                        st.rerun()
         else:
-            st.write(f"Found {len(matches)} match(es):")
-            for _, row in matches.iterrows():
-                with st.container(border=True):
-                    c1, c2 = st.columns([4, 1])
-                    with c1:
-                        st.markdown(f"**{row['name']}** — {row['klass']}")
-                        st.caption(f"Admission no. {row['admission_no']} · Guardian: {row['guardian']}")
-                    with c2:
-                        if st.button("Select", key=row["admission_no"]):
-                            st.session_state.student = row.to_dict()
-                            st.rerun()
-    else:
-        st.caption("⚠️ This is a sample database of 4 demo students for testing. "
-                   "Swap `STUDENTS` for your real register (CSV/Google Sheet/database) to make this live.")
+            st.caption("⚠️ Sample database of 4 demo students. Swap `STUDENTS` for your real register to go live.")
+    with col2:
+        st.markdown(f"""
+        <div class="card">
+            <div class="section-label" style="margin-top:0;">ℹ️ ABOUT THIS PORTAL</div>
+            <p style="color:{SLATE};font-size:13px;line-height:1.6;">
+            One place for parents to check attendance, fees, grades, and school notices —
+            with an AI assistant that can answer questions about your own child's record instantly,
+            in English, Luganda, or Swahili.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     st.stop()
 
 # ---------------------------------------------------------------
 # STUDENT DASHBOARD
 # ---------------------------------------------------------------
 s = st.session_state.student
-top_l, top_r = st.columns([5, 1])
-with top_l:
-    st.markdown(f"### {s['name']} · {s['klass']}")
-    st.caption(f"Admission no. {s['admission_no']} · Guardian on record: {s['guardian']}")
-with top_r:
-    if st.button("🔄 Switch student"):
+balance = s["fees_billed"] - s["fees_paid"]
+
+bcol1, bcol2 = st.columns([5, 1])
+with bcol1:
+    st.markdown(f"""
+    <div class="student-banner">
+        <div>
+            <div class="name">👤 {s['name']} <span style="color:{SLATE};font-weight:500;">· {s['klass']}</span></div>
+            <div class="meta">Admission no. {s['admission_no']} · Guardian on record: {s['guardian']}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+with bcol2:
+    if st.button("🔄 Switch", use_container_width=True):
         st.session_state.student = None
         st.session_state.chat = []
         st.rerun()
@@ -255,47 +436,63 @@ tabs = st.tabs(["🏠 Overview", "📢 Notices", "💰 Fees", "📊 Academic", "
 
 # --- Overview ---
 with tabs[0]:
-    balance = s["fees_billed"] - s["fees_paid"]
     c1, c2, c3 = st.columns(3)
-    for col, label, value in zip(
-        [c1, c2, c3],
-        ["Attendance", "Fee balance", "Class rank"],
-        [f"{s['attendance_pct']}%", money(balance), f"{s['rank']} / {s['out_of']}"],
-    ):
-        col.markdown(f"<div class='metric-card'><div class='value'>{value}</div>"
-                      f"<div class='label'>{label}</div></div>", unsafe_allow_html=True)
+    stats = [
+        (c1, "📅", "Attendance", f"{s['attendance_pct']}%"),
+        (c2, "💵", "Fee balance", money(balance)),
+        (c3, "🏅", "Class rank", f"{s['rank']} of {s['out_of']}"),
+    ]
+    for col, icon, label, value in stats:
+        col.markdown(f"""
+        <div class="stat-card">
+            <div class="icon">{icon}</div>
+            <div class="value">{value}</div>
+            <div class="label">{label}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("#### Latest notice")
+    st.markdown('<div class="section-label" style="margin-top:20px;">📌 LATEST NOTICE</div>', unsafe_allow_html=True)
     n = NOTICES[1]
-    st.markdown(f"""<div class="card">
-        <span class="badge badge-{n['category']}">{n['category'].title()}</span><br><br>
-        <b>{n['title']}</b><p>{n['body']}</p><small>{n['time']}</small>
-    </div>""", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="notice-card {n['category']}">
+        <span class="pill pill-{n['category']}">{n['category'].title()}</span>
+        <div class="notice-title">{n['title']}</div>
+        <div style="color:{SLATE};font-size:13.5px;line-height:1.55;">{n['body']}</div>
+        <div class="notice-time" style="margin-top:8px;">{n['time']}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- Notices ---
 with tabs[1]:
     for n in NOTICES:
-        with st.container(border=True):
-            st.markdown(f"<span class='badge badge-{n['category']}'>{n['category'].title()}</span> "
-                        f"<small>{n['time']}</small>", unsafe_allow_html=True)
-            st.markdown(f"**{n['title']}**")
-            st.write(n["body"])
-            if st.button("✨ AI summary", key=f"sum_{n['id']}"):
-                summary = ask_claude(
-                    "Shorten this school announcement into one calm, plain sentence for a parent, under 25 words.",
-                    n["body"],
-                )
-                st.success(summary)
+        st.markdown(f"""
+        <div class="notice-card {n['category']}">
+            <span class="pill pill-{n['category']}">{n['category'].title()}</span>
+            <span class="notice-time" style="float:right;">{n['time']}</span>
+            <div class="notice-title">{n['title']}</div>
+            <div style="color:{SLATE};font-size:13.5px;line-height:1.55;">{n['body']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("✨ AI summary", key=f"sum_{n['id']}"):
+            summary = ask_claude(
+                "Shorten this school announcement into one calm, plain sentence for a parent, under 25 words.",
+                n["body"],
+            )
+            st.success(summary)
 
 # --- Fees ---
 with tabs[2]:
-    balance = s["fees_billed"] - s["fees_paid"]
     pct_paid = s["fees_paid"] / s["fees_billed"]
-    st.markdown(f"#### Outstanding balance: {money(balance)}")
+    st.markdown(f"""
+    <div class="card">
+        <div class="section-label" style="margin-top:0;">💰 TERM 2 BALANCE</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:32px;font-weight:800;color:{CRIMSON_DARK};">{money(balance)}</div>
+        <div style="color:{SLATE};font-size:12.5px;margin-bottom:10px;">Due 30 June 2026</div>
+    </div>
+    """, unsafe_allow_html=True)
     st.progress(pct_paid, text=f"{pct_paid*100:.0f}% paid · {money(s['fees_paid'])} of {money(s['fees_billed'])}")
-    st.caption("Due 30 June 2026")
 
-    st.markdown("#### Payment history")
+    st.markdown('<div class="section-label" style="margin-top:18px;">🧾 PAYMENT HISTORY</div>', unsafe_allow_html=True)
     history = pd.DataFrame([
         {"Date": "14 May 2026", "Method": "MTN Mobile Money", "Amount": money(300000), "Ref": "MM240514.0091"},
         {"Date": "02 Apr 2026", "Method": "Bank deposit", "Amount": money(300000), "Ref": "CB-220409-77"},
@@ -310,26 +507,59 @@ with tabs[2]:
 
 # --- Academic ---
 with tabs[3]:
-    st.markdown(f"#### Report card — Position {s['rank']} of {s['out_of']}")
-    sub_df = pd.DataFrame(s["subjects"], columns=["Subject", "Midterm", "Final"])
-    sub_df["Change"] = sub_df["Final"] - sub_df["Midterm"]
-    st.dataframe(sub_df, use_container_width=True, hide_index=True)
+    st.markdown(f"""
+    <div class="card">
+        <div class="section-label" style="margin-top:0;">📊 REPORT CARD</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:800;color:{NAVY};">
+            Position {s['rank']} <span style="color:{SLATE};font-size:15px;font-weight:600;">of {s['out_of']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    for name, mid, fin in s["subjects"]:
+        up = fin >= mid
+        arrow_color = BLUE if up else CRIMSON
+        arrow = "↑" if up else "↓"
+        st.markdown(f"""
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;">
+            <div style="font-weight:600;color:{INK};">{name}</div>
+            <div style="font-family:'Poppins',sans-serif;font-weight:700;color:{arrow_color};">
+                {mid} → {fin} <span style="font-size:13px;">{arrow}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # --- Attendance ---
 with tabs[4]:
-    st.metric("This term", f"{s['attendance_pct']}% present")
+    st.markdown(f"""
+    <div class="card">
+        <div class="section-label" style="margin-top:0;">📅 THIS TERM</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:32px;font-weight:800;color:{NAVY};">{s['attendance_pct']}% present</div>
+    </div>
+    """, unsafe_allow_html=True)
     log = [
-        ("Mon 22 Jun", "Present"), ("Tue 23 Jun", "Present"),
-        ("Wed 24 Jun", "Late — arrived 8:40am"), ("Thu 18 Jun", "Absent — no reason given"),
-        ("Wed 17 Jun", "Present"), ("Tue 16 Jun", "Present"),
+        ("Mon 22 Jun", "Present", "🟢"), ("Tue 23 Jun", "Present", "🟢"),
+        ("Wed 24 Jun", "Late — arrived 8:40am", "🟡"), ("Thu 18 Jun", "Absent — no reason given", "🔴"),
+        ("Wed 17 Jun", "Present", "🟢"), ("Tue 16 Jun", "Present", "🟢"),
     ]
-    for date, status in log:
-        icon = "🟢" if "Present" in status else "🟡" if "Late" in status else "🟠"
-        st.write(f"{icon} **{date}** — {status}")
+    for date, status, icon in log:
+        st.markdown(f"""
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 18px;">
+            <span style="font-size:16px;">{icon}</span>
+            <div><b>{date}</b> — <span style="color:{SLATE};">{status}</span></div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # --- AI Assistant ---
 with tabs[5]:
-    st.caption(f"Answers using {s['name']}'s live record")
+    st.markdown(f"""
+    <div class="card" style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:{NAVY};display:flex;align-items:center;justify-content:center;font-size:16px;">✨</div>
+        <div>
+            <div style="font-weight:700;color:{NAVY};">Parent AI Assistant</div>
+            <div style="color:{SLATE};font-size:12px;">Answers using {s['name']}'s live record</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     system_prompt = (
         "You are the Parent AI Assistant for a Ugandan secondary school. Speak warmly and briefly "
@@ -337,7 +567,7 @@ with tabs[5]:
         f"Name: {s['name']}, Class: {s['klass']}\n"
         f"Attendance: {s['attendance_pct']}% this term\n"
         f"Fees: billed {s['fees_billed']} UGX, paid {s['fees_paid']} UGX, "
-        f"balance {s['fees_billed'] - s['fees_paid']} UGX, due 30 June 2026\n"
+        f"balance {balance} UGX, due 30 June 2026\n"
         f"Class rank: {s['rank']} of {s['out_of']}\n"
         f"Subjects (midterm->final): {', '.join(f'{n} {m}->{f}' for n, m, f in s['subjects'])}\n"
         "If asked something outside this record, say you don't have that information and suggest "
