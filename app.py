@@ -201,6 +201,37 @@ div[data-baseweb="tab-highlight"] {{ background-color: {BLUE} !important; height
     border-radius: 999px; padding: 7px 14px; margin: 4px; font-size: 12.5px;
     color: white; font-weight: 500;
 }}
+
+/* ---------- Calendar ---------- */
+.cal-row {{
+    display: flex; align-items: center; gap: 14px; background: white;
+    border-radius: 14px; padding: 12px 16px; margin-bottom: 9px;
+    border: 1px solid #E7EEF6; box-shadow: 0 2px 10px rgba(15,30,51,0.05);
+}}
+.cal-chip {{
+    min-width: 56px; text-align: center; border-radius: 10px; padding: 6px 4px;
+    color: white; font-family: 'Poppins', sans-serif;
+}}
+.cal-chip .d {{ font-size: 16px; font-weight: 800; line-height: 1; }}
+.cal-chip .m {{ font-size: 9.5px; letter-spacing: .06em; opacity: 0.85; }}
+
+/* ---------- Achievements ---------- */
+.ach-card {{
+    background: white; border-radius: 16px; padding: 18px; margin-bottom: 12px;
+    border: 1px solid #E7EEF6; box-shadow: 0 2px 10px rgba(15,30,51,0.06);
+    display: flex; gap: 14px; align-items: flex-start;
+}}
+.ach-icon {{
+    font-size: 22px; width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, {GOLD} 0%, #b87f1f 100%);
+    display: flex; align-items: center; justify-content: center;
+}}
+
+/* ---------- Notification badge ---------- */
+.notif-dot {{
+    background: {CRIMSON}; color: white; border-radius: 999px; font-size: 11px;
+    font-weight: 700; padding: 1px 7px; margin-left: 6px;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -265,6 +296,32 @@ NOTICES = [
              "and guardians are warmly welcome to attend."},
 ]
 
+EVENTS = [
+    {"date": "26 Jun", "month": "JUN", "label": "School closed — flooding (day scholars)", "tag": "emergency"},
+    {"date": "27 Jun", "month": "JUN", "label": "Visiting Sunday", "tag": "event"},
+    {"date": "30 Jun", "month": "JUN", "label": "Fees deadline — Term 2 balance", "tag": "fees"},
+    {"date": "7 Jul", "month": "JUL", "label": "End of Term 2 examinations begin (2 weeks)", "tag": "exam"},
+    {"date": "12 Jul", "month": "JUL", "label": "Inter-house sports day", "tag": "event"},
+    {"date": "26 Jul", "month": "JUL", "label": "Term 2 closing day", "tag": "meeting"},
+]
+
+ACHIEVEMENTS = [
+    {"icon": "🏆", "title": "Best STEM School — Wakiso District 2025",
+     "body": "Recognised for the school's STEM club projects, including the mosquito-trap "
+             "innovation showcased at the regional science fair."},
+    {"icon": "📚", "title": "96% UCE pass rate — 2025",
+     "body": "S4 candidates posted the school's strongest UCE results in five years, with "
+             "12 students attaining first grade."},
+    {"icon": "🥇", "title": "Wakiso Inter-school Athletics — Champions", "body":
+     "The school's athletics team won the district inter-school championship for the second "
+     "year running."},
+    {"icon": "🎭", "title": "Best Cultural Dance — Buganda Region",
+     "body": "The school's cultural troupe took first place at the regional Buganda cultural "
+             "competition."},
+]
+
+
+
 # ---------------------------------------------------------------
 # CLAUDE API HELPER
 # ---------------------------------------------------------------
@@ -308,6 +365,10 @@ if "chat" not in st.session_state:
     st.session_state.chat = []
 if "entered" not in st.session_state:
     st.session_state.entered = False
+if "read_ids" not in st.session_state:
+    st.session_state.read_ids = set()
+if "toasted_for" not in st.session_state:
+    st.session_state.toasted_for = None
 
 # ---------------------------------------------------------------
 # SPLASH / LAUNCH SCREEN — first thing a parent sees, every visit
@@ -416,6 +477,15 @@ if st.session_state.student is None:
 s = st.session_state.student
 balance = s["fees_billed"] - s["fees_paid"]
 
+# Simulate a real-time push notification the first time this student's dashboard loads
+if st.session_state.toasted_for != s["admission_no"]:
+    urgent = next((n for n in NOTICES if n["category"] == "emergency"), None)
+    if urgent:
+        st.toast(f"🔔 {urgent['title']}", icon="🚨")
+    st.session_state.toasted_for = s["admission_no"]
+
+unread_count = len([n for n in NOTICES if n["id"] not in st.session_state.read_ids])
+
 bcol1, bcol2 = st.columns([5, 1])
 with bcol1:
     st.markdown(f"""
@@ -432,7 +502,16 @@ with bcol2:
         st.session_state.chat = []
         st.rerun()
 
-tabs = st.tabs(["🏠 Overview", "📢 Notices", "💰 Fees", "📊 Academic", "✅ Attendance", "🤖 AI Assistant"])
+tabs = st.tabs([
+    "🏠 Overview",
+    f"🔔 Notifications" + (f" ({unread_count})" if unread_count else ""),
+    "📅 Calendar",
+    "💰 Fees",
+    "📊 Report Card",
+    "✅ Attendance",
+    "🏆 Achievements",
+    "🤖 AI Assistant",
+])
 
 # --- Overview ---
 with tabs[0]:
@@ -451,6 +530,22 @@ with tabs[0]:
         </div>
         """, unsafe_allow_html=True)
 
+    st.markdown('<div class="section-label" style="margin-top:20px;">✨ AI DAILY BRIEFING</div>', unsafe_allow_html=True)
+    st.markdown(f"""<div class="card" style="background:linear-gradient(135deg,{NAVY} 0%,{BLUE} 100%);color:white;">""",
+                unsafe_allow_html=True)
+    if st.button("Generate today's briefing", key="briefing_btn"):
+        briefing_prompt = (
+            f"Attendance {s['attendance_pct']}%. Fee balance {money(balance)} due 30 June. "
+            f"Class rank {s['rank']} of {s['out_of']}. Latest notice: '{NOTICES[0]['title']}'. "
+            "Write a warm 2-sentence daily briefing for the parent covering anything that needs attention."
+        )
+        st.session_state["_briefing"] = ask_claude(
+            "You write a short, warm daily briefing (max 2 sentences) for a parent, flagging only what matters.",
+            briefing_prompt,
+        )
+    st.write(st.session_state.get("_briefing", "Tap the button for a 2-sentence AI summary of everything that needs your attention today."))
+    st.markdown("</div>", unsafe_allow_html=True)
+
     st.markdown('<div class="section-label" style="margin-top:20px;">📌 LATEST NOTICE</div>', unsafe_allow_html=True)
     n = NOTICES[1]
     st.markdown(f"""
@@ -462,26 +557,60 @@ with tabs[0]:
     </div>
     """, unsafe_allow_html=True)
 
-# --- Notices ---
+# --- Notifications ---
 with tabs[1]:
+    top_l, top_r = st.columns([3, 1])
+    with top_l:
+        st.markdown(f'<div class="section-label" style="margin-top:0;">🔔 {unread_count} UNREAD</div>'
+                    if unread_count else '<div class="section-label" style="margin-top:0;">✅ ALL CAUGHT UP</div>',
+                    unsafe_allow_html=True)
+    with top_r:
+        if st.button("Mark all read", use_container_width=True):
+            st.session_state.read_ids = {n["id"] for n in NOTICES}
+            st.rerun()
+
     for n in NOTICES:
+        is_unread = n["id"] not in st.session_state.read_ids
+        dot = "🔵 " if is_unread else ""
         st.markdown(f"""
         <div class="notice-card {n['category']}">
             <span class="pill pill-{n['category']}">{n['category'].title()}</span>
             <span class="notice-time" style="float:right;">{n['time']}</span>
-            <div class="notice-title">{n['title']}</div>
+            <div class="notice-title">{dot}{n['title']}</div>
             <div style="color:{SLATE};font-size:13.5px;line-height:1.55;">{n['body']}</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("✨ AI summary", key=f"sum_{n['id']}"):
-            summary = ask_claude(
-                "Shorten this school announcement into one calm, plain sentence for a parent, under 25 words.",
-                n["body"],
-            )
-            st.success(summary)
+        bcols = st.columns([1, 1, 4])
+        with bcols[0]:
+            if st.button("✨ AI summary", key=f"sum_{n['id']}"):
+                summary = ask_claude(
+                    "Shorten this school announcement into one calm, plain sentence for a parent, under 25 words.",
+                    n["body"],
+                )
+                st.success(summary)
+        with bcols[1]:
+            if is_unread and st.button("Mark read", key=f"read_{n['id']}"):
+                st.session_state.read_ids.add(n["id"])
+                st.rerun()
+
+# --- Calendar ---
+with tabs[2]:
+    st.markdown('<div class="section-label" style="margin-top:0;">📅 TERM 2 — 2026</div>', unsafe_allow_html=True)
+    chip_color = {"emergency": CRIMSON, "fees": GOLD, "exam": NAVY, "event": "#2E86C1", "meeting": BLUE}
+    for e in EVENTS:
+        col = chip_color.get(e["tag"], BLUE)
+        st.markdown(f"""
+        <div class="cal-row">
+            <div class="cal-chip" style="background:{col};">
+                <div class="d">{e['date'].split()[0]}</div>
+                <div class="m">{e['month']}</div>
+            </div>
+            <div style="font-weight:600;color:{INK};font-size:14px;">{e['label']}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # --- Fees ---
-with tabs[2]:
+with tabs[3]:
     pct_paid = s["fees_paid"] / s["fees_billed"]
     st.markdown(f"""
     <div class="card">
@@ -505,31 +634,65 @@ with tabs[2]:
         file_name="receipt.txt",
     )
 
-# --- Academic ---
-with tabs[3]:
+# --- Report Card ---
+with tabs[4]:
+    avg = round(sum(f for _, _, f in s["subjects"]) / len(s["subjects"]), 1)
+
+    def letter_grade(score):
+        if score >= 80: return "A"
+        if score >= 70: return "B"
+        if score >= 60: return "C"
+        if score >= 50: return "D"
+        return "F"
+
     st.markdown(f"""
     <div class="card">
-        <div class="section-label" style="margin-top:0;">📊 REPORT CARD</div>
-        <div style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:800;color:{NAVY};">
-            Position {s['rank']} <span style="color:{SLATE};font-size:15px;font-weight:600;">of {s['out_of']}</span>
+        <div class="section-label" style="margin-top:0;">📊 OFFICIAL REPORT CARD — TERM 2, 2026</div>
+        <div style="display:flex;gap:28px;flex-wrap:wrap;">
+            <div>
+                <div style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:800;color:{NAVY};">
+                    Position {s['rank']} <span style="color:{SLATE};font-size:14px;font-weight:600;">of {s['out_of']}</span>
+                </div>
+                <div style="color:{SLATE};font-size:12px;">Class rank</div>
+            </div>
+            <div>
+                <div style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:800;color:{NAVY};">{avg}%</div>
+                <div style="color:{SLATE};font-size:12px;">Average final score</div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
     for name, mid, fin in s["subjects"]:
         up = fin >= mid
         arrow_color = BLUE if up else CRIMSON
         arrow = "↑" if up else "↓"
+        grade = letter_grade(fin)
         st.markdown(f"""
         <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;">
-            <div style="font-weight:600;color:{INK};">{name}</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:34px;height:34px;border-radius:9px;background:{SKY};color:{NAVY};
+                            display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;">{grade}</div>
+                <div style="font-weight:600;color:{INK};">{name}</div>
+            </div>
             <div style="font-family:'Poppins',sans-serif;font-weight:700;color:{arrow_color};">
                 {mid} → {fin} <span style="font-size:13px;">{arrow}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+    report_text = (
+        f"{SCHOOL['name']}\nOFFICIAL REPORT CARD — TERM 2, 2026\n"
+        f"Student: {s['name']}\nClass: {s['klass']}\nAdmission No: {s['admission_no']}\n"
+        f"Class Position: {s['rank']} of {s['out_of']}\nAverage Score: {avg}%\n\n"
+        + "\n".join(f"{name}: midterm {mid} -> final {fin} (Grade {letter_grade(fin)})" for name, mid, fin in s["subjects"])
+        + "\n\nClass teacher's comment: Keep up the consistent effort and continue revising past papers ahead of finals."
+    )
+    st.download_button("⬇️ Download report card", data=report_text,
+                        file_name=f"{s['name'].replace(' ', '_')}_report_card.txt")
+
 # --- Attendance ---
-with tabs[4]:
+with tabs[5]:
     st.markdown(f"""
     <div class="card">
         <div class="section-label" style="margin-top:0;">📅 THIS TERM</div>
@@ -549,8 +712,23 @@ with tabs[4]:
         </div>
         """, unsafe_allow_html=True)
 
+# --- Achievements ---
+with tabs[6]:
+    st.markdown('<div class="section-label" style="margin-top:0;">🏆 SCHOOL ACHIEVEMENTS</div>', unsafe_allow_html=True)
+    st.caption("Sample achievements — replace with your school's real wins, trophies and results.")
+    for a in ACHIEVEMENTS:
+        st.markdown(f"""
+        <div class="ach-card">
+            <div class="ach-icon">{a['icon']}</div>
+            <div>
+                <div style="font-weight:700;color:{NAVY};font-size:14.5px;">{a['title']}</div>
+                <div style="color:{SLATE};font-size:13px;line-height:1.55;margin-top:3px;">{a['body']}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
 # --- AI Assistant ---
-with tabs[5]:
+with tabs[7]:
     st.markdown(f"""
     <div class="card" style="display:flex;align-items:center;gap:10px;">
         <div style="width:38px;height:38px;border-radius:50%;background:{NAVY};display:flex;align-items:center;justify-content:center;font-size:16px;">✨</div>
