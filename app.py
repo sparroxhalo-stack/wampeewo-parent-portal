@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import base64
 import os
+import time
 
 # ---------------------------------------------------------------
 # PAGE CONFIG
@@ -192,9 +193,36 @@ div[data-baseweb="tab-highlight"] {{ background-color: {BLUE} !important; height
     color: {GOLD}; font-style: italic; font-weight: 600; font-size: 14px; margin: 6px 0 0 0;
 }}
 .splash-wrap .splash-tag {{
-    color: rgba(255,255,255,0.65); font-size: 12.5px; margin: 22px 0 18px 0;
+    color: rgba(255,255,255,0.65); font-size: 12.5px; margin: 22px 0 14px 0;
     text-transform: uppercase; letter-spacing: .12em; font-weight: 600;
 }}
+@keyframes logoPulse {{
+    0% {{ transform: scale(0.85); opacity: 0; }}
+    50% {{ transform: scale(1.04); opacity: 1; }}
+    100% {{ transform: scale(1); opacity: 1; }}
+}}
+.splash-wrap img, .splash-wrap .splash-fallback-logo {{
+    animation: logoPulse 0.9s ease-out;
+}}
+.loading-bar-track {{
+    width: 180px; height: 4px; background: rgba(255,255,255,0.15);
+    border-radius: 4px; margin: 18px auto 6px auto; overflow: hidden;
+}}
+.loading-bar-fill {{
+    height: 100%; width: 0%; background: linear-gradient(90deg, {GOLD}, {CRIMSON});
+    border-radius: 4px; animation: loadFill 1.8s ease forwards;
+}}
+@keyframes loadFill {{ from {{ width: 0%; }} to {{ width: 100%; }} }}
+.loading-text {{
+    color: rgba(255,255,255,0.55); font-size: 11px; letter-spacing: .05em;
+}}
+.loading-text span {{
+    animation: dotFade 1.4s infinite; opacity: 0;
+}}
+.loading-text span:nth-child(1) {{ animation-delay: 0s; }}
+.loading-text span:nth-child(2) {{ animation-delay: 0.2s; }}
+.loading-text span:nth-child(3) {{ animation-delay: 0.4s; }}
+@keyframes dotFade {{ 0%, 100% {{ opacity: 0; }} 50% {{ opacity: 1; }} }}
 .feature-chip {{
     display: inline-flex; align-items: center; gap: 6px;
     background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
@@ -377,7 +405,7 @@ if not st.session_state.entered:
     splash_logo = (
         f'<img src="data:image/png;base64,{logo_b64}" />'
         if logo_b64 else
-        '<div style="width:110px;height:110px;border-radius:50%;background:white;display:flex;'
+        '<div class="splash-fallback-logo" style="width:110px;height:110px;border-radius:50%;background:white;display:flex;'
         'align-items:center;justify-content:center;font-weight:800;color:#06264D;font-size:13px;margin:0 auto 18px auto;">WNSS</div>'
     )
     st.markdown(f"""
@@ -386,22 +414,14 @@ if not st.session_state.entered:
         <h1>{SCHOOL['name']}</h1>
         <p class="splash-sub">"{SCHOOL['motto']}"</p>
         <p class="splash-tag">Parent Portal</p>
-        <div>
-            <span class="feature-chip">📅 Attendance</span>
-            <span class="feature-chip">💰 Fees</span>
-            <span class="feature-chip">📊 Grades</span>
-            <span class="feature-chip">📢 Notices</span>
-            <span class="feature-chip">🤖 AI Assistant</span>
-        </div>
+        <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+        <p class="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns([1.4, 1, 1.4])
-    with c2:
-        if st.button("Enter Parent Portal →", use_container_width=True, type="primary"):
-            st.session_state.entered = True
-            st.rerun()
-    st.stop()
+    time.sleep(1.9)
+    st.session_state.entered = True
+    st.rerun()
 
 # ---------------------------------------------------------------
 # HERO HEADER (always visible once inside the app)
