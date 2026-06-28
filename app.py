@@ -193,22 +193,26 @@ SCHOOL = {
 # SAMPLE STUDENT DATABASE
 # ---------------------------------------------------------------
 STUDENTS = [
-    {"name": "Nantongo Patricia", "klass": "S4 Science", "admission_no": "WNSS/2023/0417",
+    {"name": "Nantongo Patricia", "klass": "S4 Science", "class_level": "S4", "stream": "Science",
+     "admission_no": "WNSS/2023/0417", "payment_code": "WN-0417",
      "guardian": "Mr. Ssebagala Robert", "guardian_phone": "+256 700 501 001", "attendance_pct": 96,
      "fees_billed": 850000, "fees_paid": 600000, "rank": 6, "out_of": 42,
      "subjects": [("Mathematics", 61, 74), ("Biology", 70, 78), ("Chemistry", 55, 63),
                   ("Physics", 58, 60), ("English", 72, 80), ("Geography", 66, 71)]},
-    {"name": "Okello Brian", "klass": "S2 East", "admission_no": "WNSS/2024/0182",
+    {"name": "Okello Brian", "klass": "S2 East", "class_level": "S2", "stream": "East",
+     "admission_no": "WNSS/2024/0182", "payment_code": "WN-0182",
      "guardian": "Mrs. Okello Joyce", "guardian_phone": "+256 752 220 884", "attendance_pct": 89,
      "fees_billed": 620000, "fees_paid": 620000, "rank": 14, "out_of": 38,
      "subjects": [("Mathematics", 48, 55), ("Biology", 60, 64), ("English", 52, 58),
                   ("History", 70, 72), ("CRE", 80, 84)]},
-    {"name": "Namutebi Sarah", "klass": "S6 Arts", "admission_no": "WNSS/2021/0099",
+    {"name": "Namutebi Sarah", "klass": "S6 Arts", "class_level": "S6", "stream": "Arts",
+     "admission_no": "WNSS/2021/0099", "payment_code": "WN-0099",
      "guardian": "Mr. Namutebi Henry", "guardian_phone": "+256 772 901 233", "attendance_pct": 98,
      "fees_billed": 950000, "fees_paid": 950000, "rank": 2, "out_of": 30,
      "subjects": [("Economics", 78, 85), ("Literature", 81, 88), ("Geography", 75, 79),
                   ("CRE", 80, 83)]},
-    {"name": "Mukasa David", "klass": "S1 West", "admission_no": "WNSS/2026/0301",
+    {"name": "Mukasa David", "klass": "S1 West", "class_level": "S1", "stream": "West",
+     "admission_no": "WNSS/2026/0301", "payment_code": "WN-0301",
      "guardian": "Mr. Mukasa Fred", "guardian_phone": "+256 701 887 410", "attendance_pct": 92,
      "fees_billed": 540000, "fees_paid": 270000, "rank": 9, "out_of": 45,
      "subjects": [("Mathematics", 50, 54), ("Science", 58, 61), ("English", 60, 65),
@@ -578,27 +582,59 @@ def page_notify():
 # =================================================================
 def page_pay():
     st.markdown('<div class="section-label">💳 PAY SCHOOL FEES</div>', unsafe_allow_html=True)
+    st.caption("Every student has a unique payment code (printed on the fee structure / report card). "
+               "Enter it below to look up the right account before paying.")
+
+    code_input = st.text_input("Payment code", value=s.get("payment_code", ""),
+                                placeholder="e.g. WN-0417", label_visibility="visible")
+
+    if not code_input.strip():
+        st.info("👆 Enter a payment code to look up the student.")
+        return
+
+    match = STUDENTS_DF[STUDENTS_DF["payment_code"].str.upper() == code_input.strip().upper()]
+    if match.empty:
+        st.error("❌ No student found with that payment code. Double-check the code on the fee structure or report card.")
+        return
+
+    pay_student = match.iloc[0].to_dict()
+    st.markdown(f"""
+    <div class="card" style="border-left:5px solid #1FAF54;">
+        <span style="color:#1FAF54;font-weight:700;font-size:12.5px;">✅ CODE VERIFIED</span>
+        <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:{NAVY};margin-top:6px;">{pay_student['name']}</div>
+        <div style="color:{SLATE};font-size:12.5px;margin-top:2px;">
+            Class: <b>{pay_student['class_level']}</b> &nbsp;·&nbsp; Stream: <b>{pay_student['stream']}</b>
+            &nbsp;·&nbsp; Adm. {pay_student['admission_no']}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    extra2 = st.session_state.paid_extra.get(pay_student["admission_no"], 0)
+    paid_live2 = pay_student["fees_paid"] + extra2
+    balance2 = pay_student["fees_billed"] - paid_live2
+
     st.markdown(f"""
     <div class="acct-card">
         <div class="stat-line">Outstanding balance</div>
-        <div style="font-family:'Poppins',sans-serif;font-size:30px;font-weight:800;color:{CRIMSON_DARK if balance>0 else '#1FAF54'};">{money(max(balance,0))}</div>
+        <div style="font-family:'Poppins',sans-serif;font-size:30px;font-weight:800;color:{CRIMSON_DARK if balance2>0 else '#1FAF54'};">{money(max(balance2,0))}</div>
         <div class="warn">Due 30 June 2026</div>
     </div>
     """, unsafe_allow_html=True)
-    pct_paid = min(fees_paid_live / s["fees_billed"], 1.0)
-    st.progress(pct_paid, text=f"{pct_paid*100:.0f}% paid · {money(fees_paid_live)} of {money(s['fees_billed'])}")
+    pct_paid2 = min(paid_live2 / pay_student["fees_billed"], 1.0)
+    st.progress(pct_paid2, text=f"{pct_paid2*100:.0f}% paid · {money(paid_live2)} of {money(pay_student['fees_billed'])}")
 
-    if balance <= 0:
+    if balance2 <= 0:
         st.success("✅ This term's fees are fully paid. Thank you!")
     else:
         st.markdown("##### Choose a payment method")
         method = st.radio("Method", ["MTN Mobile Money", "Airtel Money", "Bank Deposit"], label_visibility="collapsed")
-        phone = st.text_input("Phone number for payment", value=s["guardian_phone"])
+        phone = st.text_input("Phone number for payment", value=pay_student["guardian_phone"])
         amount_choice = st.radio("Amount", ["Pay full balance", "Pay a custom amount"], label_visibility="visible")
         if amount_choice == "Pay full balance":
-            amount = balance
+            amount = balance2
         else:
-            amount = st.number_input("Amount (UGX)", min_value=1000, max_value=int(balance), value=min(100000, int(balance)), step=5000)
+            amount = st.number_input("Amount (UGX)", min_value=1000, max_value=int(balance2),
+                                      value=min(100000, int(balance2)), step=5000)
 
         st.caption("🔧 Demo flow — not yet connected to a live payment gateway. Going live needs the school to "
                    "register with a licensed aggregator (e.g. Flutterwave, Pegasus, Relworx) for real MTN/Airtel "
@@ -608,9 +644,9 @@ def page_pay():
             with st.spinner(f"Requesting payment of {money(amount)} from {phone}…"):
                 time.sleep(1.6)
             ref = f"{method.split()[0].upper()[:2]}{datetime.now().strftime('%y%m%d')}.{random.randint(1000,9999)}"
-            st.session_state.paid_extra[s["admission_no"]] = st.session_state.paid_extra.get(s["admission_no"], 0) + amount
+            st.session_state.paid_extra[pay_student["admission_no"]] = st.session_state.paid_extra.get(pay_student["admission_no"], 0) + amount
             st.session_state["_last_receipt"] = {"date": datetime.now().strftime("%d %b %Y"), "method": method,
-                                                  "amount": amount, "ref": ref}
+                                                  "amount": amount, "ref": ref, "name": pay_student["name"]}
             st.balloons()
             st.rerun()
 
@@ -619,11 +655,11 @@ def page_pay():
         st.markdown(f"""
         <div class="card" style="border-left:5px solid #1FAF54;">
             <b style="color:#1FAF54;">✅ Payment received</b>
-            <p style="margin:6px 0 0 0;font-size:13.5px;color:{SLATE};">{money(r['amount'])} via {r['method']} on {r['date']}<br>Ref: {r['ref']}</p>
+            <p style="margin:6px 0 0 0;font-size:13.5px;color:{SLATE};">{money(r['amount'])} via {r['method']} for {r['name']} on {r['date']}<br>Ref: {r['ref']}</p>
         </div>
         """, unsafe_allow_html=True)
         st.download_button("⬇️ Download receipt",
-                            data=f"{SCHOOL['full_name']}\nStudent: {s['name']}\nAmount: {money(r['amount'])}\n"
+                            data=f"{SCHOOL['full_name']}\nStudent: {r['name']}\nAmount: {money(r['amount'])}\n"
                                  f"Method: {r['method']}\nDate: {r['date']}\nRef: {r['ref']}\n",
                             file_name="receipt.txt")
 
