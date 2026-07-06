@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import requests
 import base64
@@ -111,15 +112,39 @@ h1,h2,h3,h4{{font-family:'Poppins',sans-serif;}}
 .ach-card{{background:white;border-radius:16px;padding:18px;margin-bottom:12px;border:1px solid #ECEFF3;box-shadow:0 2px 10px rgba(15,30,51,.06);display:flex;gap:14px;align-items:flex-start;}}
 .ach-icon{{font-size:22px;width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}}
 
-/* Bottom nav */
+/* Bottom nav — TikTok style */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker){{
     position:fixed;bottom:0;left:0;right:0;z-index:999;
-    background:white;box-shadow:0 -4px 16px rgba(0,0,0,.08);
-    padding:6px 8px calc(env(safe-area-inset-bottom) + 6px) 8px;
+    background:#111;
+    padding:0 0 calc(env(safe-area-inset-bottom)) 0;
     max-width:720px;margin:0 auto;border:none!important;
+    box-shadow:0 -1px 0 rgba(255,255,255,.08);
 }}
-div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker)>div{{border:none!important;}}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker)>div{{border:none!important;background:transparent!important;}}
 .navmarker{{display:none;}}
+
+/* Override every button inside the nav */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker) button{{
+    background:transparent!important;border:none!important;box-shadow:none!important;
+    color:rgba(255,255,255,.55)!important;font-size:10px!important;font-weight:600!important;
+    padding:10px 4px 8px 4px!important;border-radius:0!important;
+    display:flex!important;flex-direction:column!important;align-items:center!important;
+    gap:3px!important;width:100%!important;letter-spacing:.01em;
+}}
+div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker) button:hover{{
+    color:white!important;background:transparent!important;
+}}
+/* Active nav item — white + underline */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker) button[kind="primary"]{{
+    color:white!important;border-bottom:2px solid white!important;
+}}
+/* Center Pay button */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker) button.pay-center{{
+    background:linear-gradient(135deg,{BLUE},{CRIMSON})!important;
+    border-radius:14px!important;width:54px!important;height:40px!important;
+    color:white!important;font-size:22px!important;padding:0!important;
+    box-shadow:0 4px 18px rgba(11,79,158,.5)!important;
+}}
 .stButton button{{border-radius:10px;font-weight:600;}}
 [data-testid="stChatMessage"]{{background:white;border-radius:14px;border:1px solid #ECEFF3;box-shadow:0 2px 8px rgba(15,30,51,.05);}}
 
@@ -394,30 +419,89 @@ def page_home():
         f'<div class="stat-mini"><div class="val">1966</div><div class="lab">Founded</div></div>'
         '</div>', unsafe_allow_html=True)
 
-    # Highlights strip
-    st.markdown('<div class="section-label">✨ SCHOOL HIGHLIGHTS</div>', unsafe_allow_html=True)
-    hcols = st.columns(len(HIGHLIGHTS))
-    for i, h in enumerate(HIGHLIGHTS):
-        img_b64 = get_base64(h["image"])
-        with hcols[i]:
-            if img_b64:
-                st.markdown(f"""<div class="story-circle" style="padding:0;border-color:{GOLD};">
-                    <img src="data:image/jpeg;base64,{img_b64}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>
-                </div>""", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""<div class="story-circle" style="background:linear-gradient(135deg,{h['c1']},{h['c2']});">{h['emoji']}</div>""",
-                            unsafe_allow_html=True)
-            st.markdown(f"<div class='story-label'>{h['title']}</div>", unsafe_allow_html=True)
-            if st.button("▶", key=f"hl_{h['id']}", use_container_width=True):
-                st.session_state.open_hl = h["id"] if st.session_state.open_hl != h["id"] else None
-                st.rerun()
+    # ---- Sliding highlights carousel ----
+    slides_html = ""
+    for h in HIGHLIGHTS:
+        img_b64_h = get_base64(h["image"])
+        if img_b64_h:
+            bg = f'background:url("data:image/jpeg;base64,{img_b64_h}") center/cover no-repeat;'
+            overlay = "background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.1) 60%);"
+        else:
+            bg = f"background:linear-gradient(135deg,{h['c1']},{h['c2']});"
+            overlay = "background:rgba(0,0,0,.25);"
+        slides_html += f"""
+        <div class="slide" style="{bg}">
+            <div class="overlay" style="{overlay}">
+                <div class="slide-emoji">{h['emoji']}</div>
+                <div class="slide-title">{h['title']}</div>
+                <div class="slide-body">{h['detail']}</div>
+            </div>
+        </div>"""
 
-    if st.session_state.open_hl:
-        hh = next(h for h in HIGHLIGHTS if h["id"] == st.session_state.open_hl)
-        st.markdown(f"""<div class="card" style="border-left:5px solid {hh['c1']};">
-            <b style="color:{NAVY};">{hh['emoji']} {hh['title']}</b>
-            <p style="color:{SLATE};font-size:13.5px;margin-top:6px;">{hh['detail']}</p>
-        </div>""", unsafe_allow_html=True)
+    carousel_html = f"""
+    <!DOCTYPE html><html><head>
+    <style>
+      *{{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}}
+      body{{background:transparent;overflow:hidden;}}
+      .carousel{{position:relative;width:100%;height:200px;border-radius:18px;overflow:hidden;}}
+      .track{{display:flex;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1);}}
+      .slide{{min-width:100%;height:200px;border-radius:18px;flex-shrink:0;position:relative;}}
+      .overlay{{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;
+               justify-content:flex-end;padding:18px 20px;}}
+      .slide-emoji{{font-size:26px;margin-bottom:4px;}}
+      .slide-title{{color:white;font-weight:800;font-size:17px;letter-spacing:-.01em;text-shadow:0 1px 6px rgba(0,0,0,.4);}}
+      .slide-body{{color:rgba(255,255,255,.85);font-size:11.5px;margin-top:3px;line-height:1.45;
+                  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}}
+      .dots{{position:absolute;bottom:10px;right:14px;display:flex;gap:5px;}}
+      .dot{{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s;cursor:pointer;}}
+      .dot.active{{background:white;width:18px;border-radius:3px;}}
+      .arrow{{position:absolute;top:50%;transform:translateY(-50%);
+              background:rgba(0,0,0,.35);border:none;border-radius:50%;
+              width:32px;height:32px;color:white;font-size:15px;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}}
+      .arrow-l{{left:10px;}} .arrow-r{{right:10px;}}
+      .progress{{position:absolute;top:0;left:0;height:3px;background:rgba(255,255,255,.9);
+                 border-radius:2px;transition:width .1s linear;}}
+    </style></head><body>
+    <div class="carousel" id="car">
+      <div class="track" id="track">{slides_html}</div>
+      <div class="progress" id="prog"></div>
+      <button class="arrow arrow-l" onclick="prev()">&#8249;</button>
+      <button class="arrow arrow-r" onclick="next()">&#8250;</button>
+      <div class="dots" id="dots"></div>
+    </div>
+    <script>
+      const n={len(HIGHLIGHTS)}, dur=3800;
+      let cur=0, timer, elapsed=0, raf;
+      const track=document.getElementById('track');
+      const prog=document.getElementById('prog');
+      const dotsEl=document.getElementById('dots');
+      // build dots
+      for(let i=0;i<n;i++){{
+        const d=document.createElement('div');
+        d.className='dot'+(i===0?' active':'');
+        d.onclick=()=>go(i); dotsEl.appendChild(d);
+      }}
+      function updateDots(){{
+        document.querySelectorAll('.dot').forEach((d,i)=>d.className='dot'+(i===cur?' active':''));
+      }}
+      function go(i){{cur=i;track.style.transform=`translateX(-${{cur*100}}%)`;updateDots();resetTimer();}}
+      function next(){{go((cur+1)%n);}}
+      function prev(){{go((cur-1+n)%n);}}
+      function resetTimer(){{
+        clearInterval(timer);cancelAnimationFrame(raf);elapsed=0;prog.style.width='0%';
+        let last=performance.now();
+        function tick(now){{
+          elapsed+=now-last;last=now;
+          prog.style.width=Math.min(elapsed/dur*100,100)+'%';
+          if(elapsed>=dur){{next();return;}}
+          raf=requestAnimationFrame(tick);
+        }}
+        raf=requestAnimationFrame(tick);
+      }}
+      resetTimer();
+    </script></body></html>"""
+    components.html(carousel_html, height=210)
 
     # AI daily briefing
     st.markdown('<div class="section-label" style="margin-top:6px;">✨ AI SCHOOL BRIEFING</div>', unsafe_allow_html=True)
@@ -753,25 +837,50 @@ PAGES = {
     "home": page_home, "child": page_child,
     "notify": page_notify, "calendar": page_calendar,
     "messages": page_messages, "achieve": page_achieve,
+    "pay": lambda: page_child() or None,   # pay tab opens child page on Pay Fees sub-tab
 }
 PAGES.get(st.session_state.nav, page_home)()
 
 # =================================================================
-# BOTTOM NAV
+# BOTTOM NAV — TikTok style
 # =================================================================
 with st.container(border=True):
     st.markdown('<div class="navmarker"></div>', unsafe_allow_html=True)
+
     nav_items = [
-        ("home","🏠","Home"), ("child","👤","My Child"),
-        ("notify","🔔","Alerts"), ("calendar","📅","Calendar"),
-        ("messages","💬","Messages"),
+        ("home",     "🏠",  "Home",      None),
+        ("child",    "👤",  "My Child",  None),
+        ("pay",      "+",   "",          None),   # center raise button
+        ("notify",   "🔔",  "Alerts",    unread if unread else None),
+        ("messages", "💬",  "Messages",  None),
     ]
-    ncols = st.columns(5)
-    for col, (key, icon, label) in zip(ncols, nav_items):
+
+    ncols = st.columns([1,1,1.1,1,1])
+    for col, (key, icon, label, badge) in zip(ncols, nav_items):
         with col:
             active = st.session_state.nav == key
-            if col.button(f"{icon} {label}", key=f"nav_{key}",
-                          use_container_width=True,
-                          type="primary" if active else "secondary"):
-                st.session_state.nav = key
-                st.rerun()
+            if key == "pay":
+                # Raised center button
+                st.markdown(f"""
+                <div style="display:flex;justify-content:center;align-items:center;padding:6px 0 8px 0;">
+                    <div style="width:52px;height:44px;border-radius:14px;
+                                background:linear-gradient(135deg,{BLUE},{CRIMSON});
+                                display:flex;align-items:center;justify-content:center;
+                                font-size:26px;font-weight:300;color:white;
+                                box-shadow:0 4px 18px rgba(11,79,158,.55);
+                                transform:translateY(-8px);cursor:pointer;">＋</div>
+                </div>""", unsafe_allow_html=True)
+                if col.button("Pay", key="nav_pay", use_container_width=True,
+                              type="primary" if active else "secondary"):
+                    st.session_state.nav = "pay"
+                    st.rerun()
+            else:
+                badge_html = (f'<span style="background:#C8102E;color:white;border-radius:50%;'
+                              f'font-size:9px;font-weight:800;padding:1px 5px;'
+                              f'vertical-align:super;margin-left:1px;">{badge}</span>'
+                              if badge else "")
+                btn_label = f"{icon}{badge_html} {label}" if badge else f"{icon} {label}"
+                if col.button(btn_label, key=f"nav_{key}", use_container_width=True,
+                              type="primary" if active else "secondary"):
+                    st.session_state.nav = key
+                    st.rerun()
