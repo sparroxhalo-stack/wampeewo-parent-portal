@@ -417,32 +417,49 @@ def page_home():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── ACTION GRID — visible immediately, no scrolling needed ──
+    # ── HORIZONTAL ACTION STRIP — single scrollable row ──
+    actions_html = ""
     grid_items = [
-        ("💳", BLUE,          "Pay Fees",      "pay"),
-        ("💬", "#2E86C1",     "Messages",      "messages"),
-        ("📊", NAVY,          "Report Card",   "child"),
-        ("📅", CRIMSON,       "Calendar",      "calendar"),
-        ("✅", GREEN,         "Attendance",    "child"),
-        ("🏆", GOLD,          "Achievements",  "achieve"),
-        ("🤖", "#7B4FCB",     "AI Assistant",  "child"),
-        ("🔔", CRIMSON_DARK,  "Notifications", "notify"),
+        ("💳", BLUE,         "Pay Fees",      "pay"),
+        ("💬", "#2E86C1",    "Messages",      "messages"),
+        ("📊", NAVY,         "Report Card",   "child"),
+        ("📅", CRIMSON,      "Calendar",      "calendar"),
+        ("✅", GREEN,        "Attendance",    "child"),
+        ("🏆", GOLD,         "Achievements",  "achieve"),
+        ("🤖", "#7B4FCB",    "AI Assistant",  "child"),
+        ("🔔", CRIMSON_DARK, "Notifications", "notify"),
     ]
-    st.markdown('<div class="grid-card">', unsafe_allow_html=True)
-    row1 = st.columns(4)
-    row2 = st.columns(4)
-    for i, (icon, color, label, target) in enumerate(grid_items):
-        col = row1[i] if i < 4 else row2[i - 4]
-        with col:
-            st.markdown(f"""
-            <div class="grid-item">
-                <div class="ic" style="background:{color}1A;color:{color};">{icon}</div>
-                <div class="lbl">{label}</div>
-            </div>""", unsafe_allow_html=True)
-            if st.button("·", key=f"grid_{target}_{i}", use_container_width=True):
-                st.session_state.nav = target
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    for icon, color, label, target in grid_items:
+        actions_html += f"""
+        <a href="?nav={target}" onclick="window.parent.postMessage({{nav:'{target}'}},'*')"
+           style="text-decoration:none;flex-shrink:0;display:flex;flex-direction:column;
+                  align-items:center;gap:7px;width:72px;">
+            <div style="width:52px;height:52px;border-radius:15px;
+                        background:{color}18;color:{color};
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:24px;box-shadow:0 2px 8px {color}22;">
+                {icon}
+            </div>
+            <span style="font-size:10.5px;font-weight:600;color:{INK};text-align:center;
+                         white-space:nowrap;line-height:1.2;">{label}</span>
+        </a>"""
+
+    components.html(f"""
+    <style>
+      *{{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}}
+      body{{background:transparent;overflow:hidden;}}
+      .strip{{
+        display:flex;gap:8px;overflow-x:auto;
+        background:white;border-radius:18px;
+        padding:16px 14px;
+        box-shadow:0 2px 12px rgba(15,30,51,.06);
+        border:1px solid #ECEFF3;
+        scrollbar-width:none;
+      }}
+      .strip::-webkit-scrollbar{{display:none;}}
+    </style>
+    <div class="strip">{actions_html}</div>
+    """, height=105)
 
     # ── Sliding highlights carousel ──
     slides_html = ""
