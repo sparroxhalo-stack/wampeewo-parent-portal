@@ -73,10 +73,16 @@ h1,h2,h3,h4{{font-family:'Poppins',sans-serif;}}
 .hero-text .motto{{color:{GOLD};font-style:italic;font-weight:600;font-size:12.5px;margin-top:2px;}}
 
 /* Grid */
-.grid-card{{background:white;border-radius:18px;padding:18px 14px 8px 14px;margin-bottom:14px;box-shadow:0 2px 12px rgba(15,30,51,.06);border:1px solid #ECEFF3;}}
-.grid-item{{text-align:center;padding:8px 2px 14px 2px;}}
-.grid-item .ic{{width:50px;height:50px;border-radius:14px;margin:0 auto 8px auto;display:flex;align-items:center;justify-content:center;font-size:22px;}}
-.grid-item .lbl{{font-size:11.5px;font-weight:600;color:{INK};line-height:1.25;}}
+.grid-card{{background:white;border-radius:18px;padding:16px 10px 4px 10px;margin-bottom:12px;box-shadow:0 2px 12px rgba(15,30,51,.06);border:1px solid #ECEFF3;}}
+.grid-item{{text-align:center;padding:6px 2px 2px 2px;}}
+.grid-item .ic{{width:50px;height:50px;border-radius:14px;margin:0 auto 6px auto;display:flex;align-items:center;justify-content:center;font-size:22px;}}
+.grid-item .lbl{{font-size:11px;font-weight:600;color:{INK};line-height:1.25;margin-bottom:4px;}}
+/* Make grid trigger buttons invisible — just a tap area */
+.grid-card button{{
+    opacity:0!important;height:4px!important;min-height:0!important;
+    padding:0!important;margin:0!important;border:none!important;
+    background:transparent!important;overflow:hidden;
+}}
 
 /* Cards */
 .card{{background:white;border-radius:16px;padding:18px 20px;box-shadow:0 2px 10px rgba(15,30,51,.06);border:1px solid #ECEFF3;margin-bottom:12px;}}
@@ -397,29 +403,48 @@ def fees_balance(rec):
 # PAGE: HOME — school dashboard, no student gate
 # =================================================================
 def page_home():
-    # Hero banner
+    # Compact greeting strip (small, doesn't eat screen space)
     badge_tag = (f'<img src="data:image/png;base64,{logo_b64}" />' if logo_b64
                  else '<div class="fallback-badge">WNSS</div>')
     st.markdown(f"""
-    <div class="hero-banner">
+    <div class="hero-banner" style="padding:16px 20px;margin-bottom:12px;">
         {badge_tag}
         <div class="hero-text">
-            <h2>{SCHOOL['full_name']}</h2>
-            <p class="motto">"{SCHOOL['motto']}"</p>
-            <p class="sub">📍 {SCHOOL['location']} &nbsp;·&nbsp; Est. {SCHOOL['founded']}</p>
+            <h2 style="font-size:16px;">{SCHOOL['full_name']}</h2>
+            <p class="motto" style="font-size:11px;">"{SCHOOL['motto']}"</p>
+            <p class="sub" style="font-size:10.5px;">📍 {SCHOOL['location']}</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # School quick stats
-    st.markdown('<div class="stat-row">'
-        f'<div class="stat-mini"><div class="val">1,200+</div><div class="lab">Students</div></div>'
-        f'<div class="stat-mini"><div class="val">96%</div><div class="lab">UCE Pass Rate</div></div>'
-        f'<div class="stat-mini"><div class="val">60+</div><div class="lab">Teachers</div></div>'
-        f'<div class="stat-mini"><div class="val">1966</div><div class="lab">Founded</div></div>'
-        '</div>', unsafe_allow_html=True)
+    # ── ACTION GRID — visible immediately, no scrolling needed ──
+    grid_items = [
+        ("💳", BLUE,          "Pay Fees",      "pay"),
+        ("💬", "#2E86C1",     "Messages",      "messages"),
+        ("📊", NAVY,          "Report Card",   "child"),
+        ("📅", CRIMSON,       "Calendar",      "calendar"),
+        ("✅", GREEN,         "Attendance",    "child"),
+        ("🏆", GOLD,          "Achievements",  "achieve"),
+        ("🤖", "#7B4FCB",     "AI Assistant",  "child"),
+        ("🔔", CRIMSON_DARK,  "Notifications", "notify"),
+    ]
+    st.markdown('<div class="grid-card">', unsafe_allow_html=True)
+    row1 = st.columns(4)
+    row2 = st.columns(4)
+    for i, (icon, color, label, target) in enumerate(grid_items):
+        col = row1[i] if i < 4 else row2[i - 4]
+        with col:
+            st.markdown(f"""
+            <div class="grid-item">
+                <div class="ic" style="background:{color}1A;color:{color};">{icon}</div>
+                <div class="lbl">{label}</div>
+            </div>""", unsafe_allow_html=True)
+            if st.button("·", key=f"grid_{target}_{i}", use_container_width=True):
+                st.session_state.nav = target
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # ---- Sliding highlights carousel ----
+    # ── Sliding highlights carousel ──
     slides_html = ""
     for h in HIGHLIGHTS:
         img_b64_h = get_base64(h["image"])
