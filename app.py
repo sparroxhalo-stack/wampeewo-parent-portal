@@ -25,7 +25,12 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;}}
 h1,h2,h3,h4{{font-family:'Poppins',sans-serif;}}
 .stApp{{background:{BG};}}
 #MainMenu{{visibility:hidden;}} footer{{visibility:hidden;}}
-.block-container{{padding-bottom:90px!important;padding-top:1rem!important;max-width:720px;}}
+header[data-testid="stHeader"]{{display:none!important;}}
+[data-testid="stToolbar"]{{display:none!important;}}
+[data-testid="stDecoration"]{{display:none!important;}}
+.stDeployButton{{display:none!important;}}
+#stDecoration{{display:none!important;}}
+.block-container{{padding-bottom:90px!important;padding-top:0.6rem!important;max-width:720px;}}
 
 /* Top bar */
 .topbar{{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}}
@@ -315,31 +320,75 @@ s = st.session_state.student
 # ================================================================
 
 # ── ACTION STRIP helper (used in both home & child pages) ────────
+import streamlit.components.v1 as components
+
 ACTIONS = [
-    ("💳",BLUE,       "Pay Fees",      "pay"),
-    ("💬","#2E86C1",  "Messages",      "messages"),
-    ("📊",NAVY,       "Report Card",   "child"),
-    ("📅",CRIM,       "Calendar",      "calendar"),
-    ("✅",GREEN,      "Attendance",    "child"),
-    ("🏆",GOLD,       "Achievements",  "achieve"),
-    ("🤖","#7B4FCB",  "AI Assistant",  "child"),
-    ("🔔",CRIMD,      "Notifications", "notify"),
+    ("💳", BLUE,      "Pay Fees",      "pay"),
+    ("💬", "#2E86C1", "Messages",      "messages"),
+    ("📊", NAVY,      "Report Card",   "child"),
+    ("📅", CRIM,      "Calendar",      "calendar"),
+    ("✅", GREEN,     "Attendance",    "child"),
+    ("🏆", GOLD,      "Achievements",  "achieve"),
+    ("🤖", "#7B4FCB", "AI Assistant",  "child"),
+    ("🔔", CRIMD,     "Notifications", "notify"),
 ]
 
 def render_action_strip():
-    """Horizontal scrollable action strip using real Streamlit buttons."""
-    st.markdown('<div class="act-strip">', unsafe_allow_html=True)
+    # Visual HTML strip (display only — beautiful horizontal scroll)
+    items = ""
+    for icon, color, label, _ in ACTIONS:
+        items += f"""<div class="act-item">
+            <div class="act-ic" style="background:{color}18;color:{color};">{icon}</div>
+            <span class="act-lbl">{label}</span>
+        </div>"""
+    components.html(f"""
+    <style>
+      *{{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}}
+      body{{background:transparent;overflow:hidden;}}
+      .strip{{display:flex;gap:4px;overflow-x:auto;background:white;border-radius:16px;
+              padding:14px 10px 12px;box-shadow:0 2px 10px rgba(15,30,51,.06);
+              border:1px solid #ECEFF3;scrollbar-width:none;-webkit-overflow-scrolling:touch;}}
+      .strip::-webkit-scrollbar{{display:none;}}
+      .act-item{{flex-shrink:0;display:flex;flex-direction:column;align-items:center;
+                 gap:6px;width:70px;padding:4px 2px;}}
+      .act-ic{{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;
+               justify-content:center;font-size:23px;}}
+      .act-lbl{{font-size:10px;font-weight:600;color:#10182B;text-align:center;
+                line-height:1.2;white-space:nowrap;}}
+    </style>
+    <div class="strip">{items}</div>
+    """, height=105)
+
+    # Real working Streamlit buttons — styled invisible, sitting as tap targets
+    st.markdown("""
+    <style>
+    div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"].act-nav-btn) {
+        background: transparent; gap: 2px; margin-top: -8px; margin-bottom: 8px;
+    }
+    div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"].act-nav-btn) button {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: transparent !important;
+        font-size: 8px !important;
+        padding: 2px !important;
+        height: 28px !important;
+        min-height: 0 !important;
+        border-radius: 4px !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"].act-nav-btn) button:hover {
+        background: rgba(11,79,158,0.06) !important;
+        color: transparent !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     cols = st.columns(len(ACTIONS))
     for col, (icon, color, label, target) in zip(cols, ACTIONS):
         with col:
-            st.markdown(f"""<div class="act-ic" style="background:{color}18;color:{color};">{icon}</div>
-            <div style="font-size:10px;font-weight:600;color:{INK};text-align:center;line-height:1.2;">{label}</div>""",
-            unsafe_allow_html=True)
-            if st.button("​", key=f"act_{target}_{label}", use_container_width=True,
-                         help=label):
+            if st.button("·", key=f"act_{label}", help=label,
+                         use_container_width=True):
                 st.session_state.nav = target
                 st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ── HOME ─────────────────────────────────────────────────────────
 def page_home():
@@ -361,24 +410,85 @@ def page_home():
         '<div class="stat-mini"><div class="sv">1966</div><div class="sl">Founded</div></div>'
         '</div>', unsafe_allow_html=True)
 
-    # Highlights strip (scrollable cards)
+    # Highlights — auto-sliding carousel via components.html
     st.markdown('<div class="slabel">✨ SCHOOL HIGHLIGHTS</div>', unsafe_allow_html=True)
-    hl_html = ""
+    slides = ""
     for h in HIGHLIGHTS:
         ib = get_b64(h["img"])
         if ib:
             bg = f'background:url("data:image/jpeg;base64,{ib}") center/cover no-repeat;'
         else:
             bg = f"background:linear-gradient(135deg,{h['c1']},{h['c2']});"
-        hl_html += f"""<div class="hl-card" style="{bg}">
-            <div class="hlov"></div>
-            <div class="hltx">
-                <div style="font-size:20px;margin-bottom:3px;">{h['emoji']}</div>
-                <div class="hltit">{h['title']}</div>
-                <div class="hlsub">{h['detail'][:55]}…</div>
+        slides += f"""<div class="slide" style="{bg}">
+            <div class="ov"></div>
+            <div class="tx">
+                <div style="font-size:22px;margin-bottom:3px;">{h['emoji']}</div>
+                <div class="tit">{h['title']}</div>
+                <div class="sub">{h['detail'][:60]}…</div>
             </div>
         </div>"""
-    st.markdown(f'<div class="hl-wrap">{hl_html}</div>', unsafe_allow_html=True)
+
+    components.html(f"""
+    <style>
+      *{{box-sizing:border-box;margin:0;padding:0;}}
+      body{{background:transparent;overflow:hidden;font-family:'Inter',sans-serif;}}
+      .car{{position:relative;width:100%;height:170px;border-radius:16px;overflow:hidden;}}
+      .track{{display:flex;height:100%;transition:transform .55s cubic-bezier(.4,0,.2,1);}}
+      .slide{{min-width:100%;height:170px;flex-shrink:0;position:relative;border-radius:16px;}}
+      .ov{{position:absolute;inset:0;border-radius:16px;
+           background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(0,0,0,.05) 65%);}}
+      .tx{{position:absolute;bottom:0;left:0;right:0;padding:14px 16px;}}
+      .tit{{color:white;font-weight:800;font-size:16px;letter-spacing:-.01em;}}
+      .sub{{color:rgba(255,255,255,.82);font-size:11px;margin-top:3px;line-height:1.4;}}
+      .dots{{position:absolute;bottom:10px;right:13px;display:flex;gap:5px;}}
+      .dot{{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);
+            cursor:pointer;transition:all .3s;}}
+      .dot.on{{background:white;width:18px;border-radius:3px;}}
+      .bar{{position:absolute;top:0;left:0;height:3px;
+            background:rgba(255,255,255,.9);border-radius:2px;}}
+      .arr{{position:absolute;top:50%;transform:translateY(-50%);
+            background:rgba(0,0,0,.3);border:none;border-radius:50%;
+            width:30px;height:30px;color:white;font-size:15px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            backdrop-filter:blur(4px);}}
+      .al{{left:9px;}} .ar{{right:9px;}}
+    </style>
+    <div class="car" id="c">
+      <div class="track" id="tr">{slides}</div>
+      <div class="bar" id="bar"></div>
+      <button class="arr al" onclick="prev()">&#8249;</button>
+      <button class="arr ar" onclick="next()">&#8250;</button>
+      <div class="dots" id="dots"></div>
+    </div>
+    <script>
+      const N={len(HIGHLIGHTS)},DUR=3800;
+      let cur=0,raf,last;
+      const tr=document.getElementById('tr'),
+            bar=document.getElementById('bar'),
+            dt=document.getElementById('dots');
+      for(let i=0;i<N;i++){{
+        const d=document.createElement('div');
+        d.className='dot'+(i===0?' on':'');
+        d.onclick=()=>go(i); dt.appendChild(d);
+      }}
+      function upd(){{document.querySelectorAll('.dot').forEach((d,i)=>d.className='dot'+(i===cur?' on':''));}}
+      function go(i){{cur=i;tr.style.transform=`translateX(-${{cur*100}}%)`;upd();reset();}}
+      function next(){{go((cur+1)%N);}}
+      function prev(){{go((cur-1+N)%N);}}
+      function reset(){{
+        cancelAnimationFrame(raf);bar.style.width='0%';last=null;
+        function tick(now){{
+          if(!last)last=now;
+          const e=now-last;
+          bar.style.width=Math.min(e/DUR*100,100)+'%';
+          if(e>=DUR){{next();return;}}
+          raf=requestAnimationFrame(tick);
+        }}
+        raf=requestAnimationFrame(tick);
+      }}
+      reset();
+    </script>
+    """, height=180)
 
     # AI briefing
     st.markdown('<div class="slabel">✨ AI SCHOOL BRIEFING</div>', unsafe_allow_html=True)
