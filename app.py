@@ -110,6 +110,34 @@ header[data-testid="stHeader"]{{display:none!important;}}
 .slabel{{font-family:'Poppins',sans-serif;font-weight:700;font-size:11.5px;
           text-transform:uppercase;letter-spacing:.08em;color:{SLATE};margin:4px 0 9px 0;}}
 
+/* iOS-style action strip */
+.ios-sw{{background:white;border-radius:16px;padding:14px 6px 0 6px;margin-bottom:0;
+          box-shadow:0 2px 10px rgba(15,30,51,.06);border:1px solid #ECEFF3;}}
+/* The st.columns block rendered right after .ios-sw */
+.ios-sw + div [data-testid="stHorizontalBlock"],
+.ios-sw ~ div [data-testid="stHorizontalBlock"]{{
+    overflow-x:auto!important;flex-wrap:nowrap!important;
+    scrollbar-width:none!important;
+    padding:0 4px 14px 4px!important;
+    gap:2px!important;
+}}
+.ios-sw + div [data-testid="stHorizontalBlock"]::-webkit-scrollbar{{display:none;}}
+.ios-sw + div [data-testid="stColumn"],
+.ios-sw ~ div [data-testid="stColumn"]{{
+    min-width:72px!important;max-width:72px!important;
+    flex:0 0 72px!important;padding:0 2px!important;
+}}
+/* Buttons inside the strip */
+.ios-sw + div button, .ios-sw ~ div button,
+.ios-sw + div [data-testid="stColumn"] button,
+.ios-sw ~ div [data-testid="stColumn"] button {{
+    background:transparent!important;border:none!important;
+    box-shadow:none!important;outline:none!important;
+    color:{INK}!important;font-size:10.5px!important;font-weight:700!important;
+    padding:0 2px 5px!important;min-height:0!important;height:auto!important;
+    width:100%!important;text-align:center!important;border-radius:10px!important;
+}}
+
 /* Bottom nav */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(div.navmarker){{
     position:fixed;bottom:0;left:0;right:0;z-index:999;
@@ -334,73 +362,15 @@ ACTIONS = [
 ]
 
 def render_action_strip():
-    # CSS that turns st.columns buttons into iOS-style icon tiles
-    st.markdown(f"""
-    <style>
-    div.act-row {{
-        background: white;
-        border-radius: 16px;
-        padding: 14px 8px 10px 8px;
-        margin-bottom: 12px;
-        box-shadow: 0 2px 10px rgba(15,30,51,.06);
-        border: 1px solid #ECEFF3;
-        display: flex;
-        overflow-x: auto;
-        scrollbar-width: none;
-        gap: 0;
-    }}
-    div.act-row::-webkit-scrollbar {{ display: none; }}
-
-    div.act-row > div[data-testid="stColumn"] {{
-        min-width: 72px !important;
-        flex: 0 0 72px !important;
-        padding: 0 2px !important;
-    }}
-
-    div.act-row .stButton > button {{
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        min-height: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 0 !important;
-        border-radius: 0 !important;
-        cursor: pointer;
-    }}
-    div.act-row .stButton > button:hover {{
-        background: transparent !important;
-        transform: scale(1.05);
-        transition: transform .15s;
-    }}
-    div.act-row .stButton > button:active {{
-        transform: scale(0.93) !important;
-    }}
-    div.act-row .stButton > button p {{
-        font-size: 10px !important;
-        font-weight: 700 !important;
-        color: {INK} !important;
-        margin: 4px 0 0 0 !important;
-        white-space: nowrap !important;
-        line-height: 1.2 !important;
-    }}
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<div class="act-row">', unsafe_allow_html=True)
+    st.markdown('<div class="ios-sw">', unsafe_allow_html=True)
     cols = st.columns(len(ACTIONS))
     for col, (icon, color, label, target) in zip(cols, ACTIONS):
         with col:
-            # Icon tile rendered above the button
             st.markdown(f"""
             <div style="width:52px;height:52px;border-radius:14px;
-                        background:{color}18;color:{color};
+                        background:{color}18;
                         display:flex;align-items:center;justify-content:center;
-                        font-size:24px;margin:0 auto 0 auto;pointer-events:none;">
+                        font-size:24px;margin:0 auto 4px auto;pointer-events:none;">
                 {icon}
             </div>""", unsafe_allow_html=True)
             if st.button(label, key=f"act_{label}", use_container_width=True):
